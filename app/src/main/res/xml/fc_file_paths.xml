@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 仅暴露临时目录给 FileProvider：
+     preview_plain/  应用内预览临时件（不计入核验）
+     share/          台账/证据 JSON 的系统分享文件（不含密钥，可随时删除） -->
+<paths>
+    <cache-path name="preview_plain" path="preview_plain/" />
+    <cache-path name="share" path="share/" />
+</paths>

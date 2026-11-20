@@ -1,0 +1,32 @@
+# Gradle / Android 构建产物
+.gradle/
+build/
+app/build/
+app/.cxx/
+.cxx/
+
+# 本机环境（含 SDK 绝对路径，不可入库）
+local.properties
+
+# IDE
+.idea/
+*.iml
+*.hprof
+
+# 本机调试产物
+captures/
+*.log
+*.apk
+*.aab
+*.zip
+
+# 签名材料（严禁入库）
+*.jks
+*.keystore
+*.p12
+*.bks
+*.pem
+
+# 系统
+.DS_Store
+Thumbs.db

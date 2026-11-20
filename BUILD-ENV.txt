@@ -1,0 +1,72 @@
+取证相机 v3.4.5（versionCode 11）— 可复现构建环境指纹
+============================================================
+
+版本基准
+--------
+applicationId : com.forensic.capture
+versionName   : 3.4.5
+versionCode   : 11
+包内解密格式  : fmt=E1（录制期 AES-256-GCM 分片）/ F0（旧明文证据兼容）
+
+固定工具链（缺一不可）
+----------------------
+OS              : Microsoft Windows 10 专业版 10.0.19045
+JDK             : Eclipse Adoptium Temurin 17.0.20.101 (java 17.0.20.1+1)
+Gradle          : 8.7（gradle/wrapper 内固定 distributionUrl）
+AGP             : 8.5.2
+Kotlin          : 1.9.24
+Compose         : BOM 2024.06.00 / compiler 1.5.14
+Android SDK     : platform 34
+Build-Tools     : 34.0.0
+NDK             : 26.1.10909125
+CMake           : 4.3.1（官方 Kitware，pip install cmake==4.3.1；
+                  路径示例：<site-packages>\cmake\data，通过 local.properties 的 cmake.dir 指定）
+Ninja           : 1.10.2（AGP 选用 SDK cmake/3.22.1/bin/ninja.exe）
+构建路径         : 必须为纯 ASCII 路径；本次构建镜像为 C:\fcbuild\src\forensic-camera
+
+CMake 说明（重要）
+------------------
+Android SDK 自带的 CMake 3.22.1 / 3.31.6 / 4.1.2 在本机 Windows 上执行
+C++ 编译器识别时崩溃（退出码 -1073740791 / 0xC0000409），不能用于构建。
+因此本工程通过 local.properties 的 cmake.dir 固定使用官方 Kitware CMake 4.3.1。
+app/build.gradle.kts 不再写死 cmake version。
+
+构建命令（两次全 clean、无缓存、非并行）
+----------------------------------------
+gradlew.bat --no-daemon --no-parallel --no-build-cache clean :app:assembleRelease --rerun-tasks
+
+签名命令（固定 release.keystore；v2 only；不写时间戳）
+------------------------------------------------------
+apksigner sign --ks <release.keystore> --ks-key-alias forensic-release ^
+  --v1-signing-enabled false --v2-signing-enabled true ^
+  --v3-signing-enabled false --v4-signing-enabled false <apk>
+
+可复现性实测（2026-11-16，两次完全独立 clean 构建）
+---------------------------------------------------
+unsigned APK SHA-256 : EE334032727FB3AAE428D6DE56ADAB5D4140A7B8BA0A99125FEC7F7BA0D4F56D
+signed   APK SHA-256 : 330055C2DC572134CD53F2BE4AB5CB18B12C25AF9A2B44C9BE9FE98AB0FB2A87
+签名证书 SHA-256     : 09bfeeb368b715d6591ce1a795b916b08cbd493d43e05131b1cdbde748e00c1e
+签名方案             : APK Signature Scheme v2（v1/v3/v4 关闭）
+
+两次构建的 unsigned 与 signed APK 均逐字节一致；prints 见
+outputs/ARCHITECTURE.md §13.1 与 outputs/README.md。
+
+复算与验收
+----------
+1. 从 forensic-camera-src-v3.4.5.zip 解压到纯 ASCII 路径。
+2. 按本文件安装固定工具链，写 local.properties：
+     sdk.dir=<SDK>
+     cmake.dir=<cmake-4.3.1>\cmake\data
+3. 执行 repro_build.ps1（默认会比对上述 unsigned/signed 哈希与证书指纹）。
+4. 交付 APK 的签名证书必须等于
+   09bfeeb368b715d6591ce1a795b916b08cbd493d43e05131b1cdbde748e00c1e。
+5. 链上 register 时记录：
+   release vc=11 apk=<signed SHA-256> cert=<证书指纹> unsigned=<unsigned SHA-256>
+
+限制声明
+--------
+- debug 构建不保证可复现（D8 per-class dexing 与签名/打包差异），仅用于功能调试，
+  不得作为取证交付物。
+- 私有 release.keystore 与 keystore-info.txt 不随源码分发；第三方以交付 APK 的
+  apksigner 证书指纹与链上 register 记录比对完成身份闭环。
+- 构建路径、工具链版本、并行/缓存策略任一变化都可能改变 APK 字节。
